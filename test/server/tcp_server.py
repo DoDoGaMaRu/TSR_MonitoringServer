@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import io
 import pickle
 import asyncio
@@ -9,7 +7,7 @@ from multiprocessing.connection import Connection
 
 def send_protocol(event, machine_name, data=None):
     with io.BytesIO() as memfile:
-        pickle.dump([event, machine_name, data], memfile)
+        pickle.dump((event, machine_name, data), memfile)
         serialized = memfile.getvalue()
     return serialized
 
@@ -23,18 +21,30 @@ def tcp_recv_protocol(msg: bytes):
 
 
 class TCPServerProtocol(asyncio.Protocol):
+    def __init__(self):
+        self.machine_name = None
+
     def connection_made(self, transport: transports.WriteTransport) -> None:
-        self.peername = 'test' # TODO transport.get_extra_info('peername')
-        print(f'Connection from {self.peername}')
         self.transport = transport
         self.reader = asyncio.StreamReader(loop=asyncio.get_event_loop())
         self.writer = asyncio.StreamWriter(transport=transport,
                                            protocol=self,
                                            reader=self.reader,
                                            loop=asyncio.get_event_loop())
-        w_pipe.send(send_protocol(event='c', machine_name=self.peername))
 
-        # TODO transport에 extrainfo 속성이 있는것으로 보아 클라이언트의 속성을 받을 수 있는것으로 보임, 해당부분 확인 필요
+        self.peername = transport.get_extra_info('peername')
+
+        async def set_machine_name():
+            while True:
+                try:
+                    self.machine_name = '/' + (await self.reader.readuntil())[:-1].decode()
+                    w_pipe.send(send_protocol(event='c', machine_name=self.machine_name))
+                    break
+                except asyncio.IncompleteReadError:
+                    break
+                except RuntimeError:
+                    break
+        asyncio.create_task(set_machine_name())
 
     def data_received(self, data):
         self.reader.feed_data(data)
@@ -43,21 +53,21 @@ class TCPServerProtocol(asyncio.Protocol):
     async def handle_messages(self):
         while True:
             try:
-                # TODO 지금은 encode() 된 문자열만 가능함
                 machine_event, data = tcp_recv_protocol(await self.reader.readuntil())
                 # Process the received message here
 
                 w_pipe.send(send_protocol(event='m',
-                                          machine_name=self.peername,
+                                          machine_name=self.machine_name,
                                           data=(machine_event, data)))
             except asyncio.IncompleteReadError:
                 break
             except RuntimeError:
                 break
 
-    def connection_lost(self, exc: Exception | None) -> None:
-        print('connection lost')
+    def connection_lost(self, exc) -> None:
+        w_pipe.send(send_protocol(event='d', machine_name=self.machine_name))
         self.writer.close()
+        print(f'connection lost {self.machine_name}')
 
 
 def tcp_server_process(host: str, port: int, w_conn: Connection):

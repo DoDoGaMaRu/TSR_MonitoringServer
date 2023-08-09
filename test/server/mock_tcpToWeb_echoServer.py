@@ -12,7 +12,7 @@ from multiprocessing import Process, Pipe, connection
 from tcp_server import tcp_server_process
 
 
-HOST = 'localhost'
+HOST = '192.168.0.8'
 PORT = 8080
 TCP_PORT = 8082
 
@@ -64,12 +64,11 @@ async def tcp_rcv_event(r_conn: connection.Connection):
             break
 
         tcp_event, machine_name, machine_msg = recv_protocol(tcp_msg)
-        machine_name = '/' + machine_name
 
         if tcp_event == 'c':
-            pass
+            print(f'{machine_name} connected')
         elif tcp_event == 'd':
-            pass
+            print(f'{machine_name} disconnected')
         elif tcp_event == 'm':
             event, data = machine_msg
             await sio.emit(namespace=machine_name, event=event, data=data)
