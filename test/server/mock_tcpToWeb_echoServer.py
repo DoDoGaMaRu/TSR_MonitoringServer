@@ -12,14 +12,13 @@ from multiprocessing import Process, Pipe, connection
 from tcp_server import tcp_server_process
 
 
-HOST = '192.168.0.8'
+HOST = 'localhost'
 PORT = 8080
 TCP_PORT = 8082
 
 app = FastAPI()
 sio = socketio.AsyncServer(async_mode='asgi',
                            cors_allowed_origins='*',)
-namespace_path = '/test'
 
 
 class CustomNamespace(AsyncNamespace):
@@ -34,10 +33,6 @@ class CustomNamespace(AsyncNamespace):
     def on_disconnect(self, sid):
         client = 'sid: ' + sid
         print(self.name + ' disconnected \t- ' + client)
-
-
-namespace_handler = CustomNamespace(namespace=namespace_path)
-sio.register_namespace(namespace_handler=namespace_handler)
 
 
 def server_load(_app, loop: AbstractEventLoop, host, port):
@@ -67,6 +62,8 @@ async def tcp_rcv_event(r_conn: connection.Connection):
 
         if tcp_event == 'c':
             print(f'{machine_name} connected')
+            dynamic_namespace_handler = CustomNamespace(namespace=machine_name)
+            sio.register_namespace(namespace_handler=dynamic_namespace_handler)
         elif tcp_event == 'd':
             print(f'{machine_name} disconnected')
         elif tcp_event == 'm':
