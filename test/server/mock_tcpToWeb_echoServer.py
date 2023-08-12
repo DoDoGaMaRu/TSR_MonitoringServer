@@ -65,6 +65,7 @@ async def tcp_rcv_event(r_conn: connection.Connection):
             dynamic_namespace_handler = CustomNamespace(namespace=machine_name)
             sio.register_namespace(namespace_handler=dynamic_namespace_handler)
         elif tcp_event == 'd':
+            del sio.namespace_handlers[machine_name]
             print(f'{machine_name} disconnected')
         elif tcp_event == 'm':
             event, data = machine_msg
