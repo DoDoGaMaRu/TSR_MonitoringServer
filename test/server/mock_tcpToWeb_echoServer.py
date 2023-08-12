@@ -69,6 +69,7 @@ async def tcp_rcv_event(r_conn: connection.Connection):
             print(f'{machine_name} disconnected')
         elif tcp_event == 'm':
             event, data = machine_msg
+            print(f'namespace : {machine_name}, event : {event}, data : {data}')
             await sio.emit(namespace=machine_name, event=event, data=data)
 
 
