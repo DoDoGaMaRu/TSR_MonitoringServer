@@ -37,7 +37,7 @@ class TCPServerProtocol(asyncio.Protocol):
 
         async def set_machine_name():
             self.machine_name = '/' + (await self.reader.readuntil())[:-1].decode()
-            w_pipe.send(send_protocol(event='c', machine_name=self.machine_name))
+            w_pipe.send(send_protocol(event=TcpEventConfig.CONNECT, machine_name=self.machine_name))
         asyncio.create_task(set_machine_name())
 
     def data_received(self, data):
