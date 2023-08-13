@@ -1,8 +1,9 @@
-import configparser
+import yaml
 
-config_file = 'resources/config.ini'
-cfg = configparser.ConfigParser()
-cfg.read(config_file)
+config_file = 'resources/config.yml'
+
+with open(config_file, 'r', encoding='UTF-8') as yml:
+    cfg = yaml.safe_load(yml)
 
 
 class TcpServerConfig:
