@@ -36,15 +36,8 @@ class TCPServerProtocol(asyncio.Protocol):
         self.peername = transport.get_extra_info('peername')
 
         async def set_machine_name():
-            while True:
-                try:
-                    self.machine_name = '/' + (await self.reader.readuntil())[:-1].decode()
-                    w_pipe.send(send_protocol(event=TcpEventConfig.CONNECT, machine_name=self.machine_name))
-                    break
-                except asyncio.IncompleteReadError:
-                    break
-                except RuntimeError:
-                    break
+            self.machine_name = '/' + (await self.reader.readuntil())[:-1].decode()
+            w_pipe.send(send_protocol(event='c', machine_name=self.machine_name))
         asyncio.create_task(set_machine_name())
 
     def data_received(self, data):
