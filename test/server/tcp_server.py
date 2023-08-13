@@ -3,6 +3,7 @@ import pickle
 import asyncio
 from asyncio import transports
 from multiprocessing.connection import Connection
+from config import TcpEventConfig
 
 
 def send_protocol(event, machine_name, data=None):
@@ -36,7 +37,7 @@ class TCPServerProtocol(asyncio.Protocol):
 
         async def set_machine_name():
             self.machine_name = '/' + (await self.reader.readuntil())[:-1].decode()
-            w_pipe.send(send_protocol(event='c', machine_name=self.machine_name))
+            w_pipe.send(send_protocol(event=TcpEventConfig.CONNECT, machine_name=self.machine_name))
         asyncio.create_task(set_machine_name())
 
     def data_received(self, data):
@@ -49,7 +50,7 @@ class TCPServerProtocol(asyncio.Protocol):
                 machine_event, data = tcp_recv_protocol(await self.reader.readuntil())
                 # Process the received message here
 
-                w_pipe.send(send_protocol(event='m',
+                w_pipe.send(send_protocol(event=TcpEventConfig.MESSAGE,
                                           machine_name=self.machine_name,
                                           data=(machine_event, data)))
             except asyncio.IncompleteReadError:
@@ -58,7 +59,7 @@ class TCPServerProtocol(asyncio.Protocol):
                 break
 
     def connection_lost(self, exc) -> None:
-        w_pipe.send(send_protocol(event='d', machine_name=self.machine_name))
+        w_pipe.send(send_protocol(event=TcpEventConfig.DISCONNECT, machine_name=self.machine_name))
         self.writer.close()
         print(f'connection lost {self.machine_name}')
 
