@@ -10,15 +10,11 @@ from socketio import AsyncNamespace
 from multiprocessing import Process, Pipe, connection
 
 from tcp_server import tcp_server_process
-
-
-HOST = 'localhost'
-PORT = 8080
-TCP_PORT = 8082
+from config import TcpServerConfig, TcpEventConfig
 
 app = FastAPI()
-sio = socketio.AsyncServer(async_mode='asgi',
-                           cors_allowed_origins='*',)
+sio = socketio.AsyncServer(async_mode=TcpServerConfig.ASYNC_MODE,
+                           cors_allowed_origins=TcpServerConfig.CORS_ORIGINS,)
 
 
 class CustomNamespace(AsyncNamespace):
@@ -60,14 +56,14 @@ async def tcp_rcv_event(r_conn: connection.Connection):
 
         tcp_event, machine_name, machine_msg = recv_protocol(tcp_msg)
 
-        if tcp_event == 'c':
+        if tcp_event == TcpEventConfig.CONNECT:
             print(f'{machine_name} connected')
             dynamic_namespace_handler = CustomNamespace(namespace=machine_name)
             sio.register_namespace(namespace_handler=dynamic_namespace_handler)
-        elif tcp_event == 'd':
+        elif tcp_event == TcpEventConfig.DISCONNECT:
             del sio.namespace_handlers[machine_name]
             print(f'{machine_name} disconnected')
-        elif tcp_event == 'm':
+        elif tcp_event == TcpEventConfig.MESSAGE:
             event, data = machine_msg
             print(f'namespace : {machine_name}, event : {event}, data : {data}')
             await sio.emit(namespace=machine_name, event=event, data=data)
@@ -79,7 +75,7 @@ if __name__ == '__main__':
     r_conn, w_conn = Pipe(duplex=False)
 
     tcp_server_process = Process(target=tcp_server_process,
-                                 kwargs={'host': HOST, 'port': TCP_PORT, 'w_conn': w_conn},
+                                 kwargs={'host': TcpServerConfig.HOST, 'port': TcpServerConfig.TCP_PORT, 'w_conn': w_conn},
                                  daemon=True)
 
     try:
@@ -87,7 +83,7 @@ if __name__ == '__main__':
 
         socket_app = socketio.ASGIApp(sio, app)
         main_loop = asyncio.get_event_loop()
-        socket_server = server_load(socket_app, main_loop, HOST, PORT)
+        socket_server = server_load(socket_app, main_loop, TcpServerConfig.HOST, int(TcpServerConfig.PORT))
 
         main_loop.create_task(tcp_rcv_event(r_conn=r_conn))
         main_loop.run_until_complete(socket_server.serve())
