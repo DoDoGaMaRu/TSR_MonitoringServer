@@ -14,10 +14,13 @@ def send_protocol(event, machine_name, data=None):
 
 
 def tcp_recv_protocol(msg: bytes):
-    with io.BytesIO() as memfile:
-        memfile.write(msg)
-        memfile.seek(0)
-        event, data = pickle.load(memfile)
+    try:
+        with io.BytesIO() as memfile:
+            memfile.write(msg[:-2])
+            memfile.seek(0)
+            event, data = pickle.load(memfile)
+    except Exception:
+        raise pickle.PickleError()
     return event, data
 
 
@@ -36,7 +39,7 @@ class TCPServerProtocol(asyncio.Protocol):
         self.peername = transport.get_extra_info('peername')
 
         async def set_machine_name():
-            self.machine_name = '/' + (await self.reader.readuntil())[:-1].decode()
+            self.machine_name = '/' + (await self.reader.readuntil(separator=b'\o'))[:-2].decode()
             w_pipe.send(send_protocol(event=TcpEventConfig.CONNECT, machine_name=self.machine_name))
         asyncio.create_task(set_machine_name())
 
@@ -47,12 +50,14 @@ class TCPServerProtocol(asyncio.Protocol):
     async def handle_messages(self):
         while True:
             try:
-                machine_event, data = tcp_recv_protocol(await self.reader.readuntil())
+                machine_event, data = tcp_recv_protocol(await self.reader.readuntil(separator=b'\o'))
                 # Process the received message here
 
                 w_pipe.send(send_protocol(event=TcpEventConfig.MESSAGE,
                                           machine_name=self.machine_name,
                                           data=(machine_event, data)))
+            except pickle.PickleError:
+                pass
             except asyncio.IncompleteReadError:
                 break
             except RuntimeError:

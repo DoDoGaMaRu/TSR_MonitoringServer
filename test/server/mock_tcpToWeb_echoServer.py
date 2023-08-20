@@ -13,7 +13,7 @@ from tcp_server import tcp_server_process
 from config import TcpServerConfig, TcpEventConfig
 
 app = FastAPI()
-sio = socketio.AsyncServer(async_mode=TcpServerConfig.ASYNC_MODE,
+sio = socketio.AsyncServer(async_mode='asgi',
                            cors_allowed_origins=TcpServerConfig.CORS_ORIGINS,)
 
 
@@ -33,9 +33,9 @@ class CustomNamespace(AsyncNamespace):
 
 def server_load(_app, loop: AbstractEventLoop, host, port):
     config = Config(app=_app,
-                    loop=loop,
                     host=host,
-                    port=port)
+                    port=port,
+                    loop=loop)
     return Server(config)
 
 
@@ -62,10 +62,10 @@ async def tcp_rcv_event(r_conn: connection.Connection):
             sio.register_namespace(namespace_handler=dynamic_namespace_handler)
         elif tcp_event == TcpEventConfig.DISCONNECT:
             del sio.namespace_handlers[machine_name]
-            print(f'{machine_name} disconnected')
+            # print(f'{machine_name} disconnected')
         elif tcp_event == TcpEventConfig.MESSAGE:
             event, data = machine_msg
-            print(f'namespace : {machine_name}, event : {event}, data : {data}')
+            # print(f'namespace : {machine_name}, event : {event}, data : {data}')
             await sio.emit(namespace=machine_name, event=event, data=data)
 
 

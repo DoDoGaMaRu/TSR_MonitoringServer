@@ -1,11 +1,17 @@
 TCP_SERVER:
-  HOST: 'localhost'
+  HOST: '192.168.0.8'
   PORT: 8080
   TCP_PORT: 8082
-  ASYNC_MODE: 'asgi'
   CORS_ORIGINS: '*'
 
-TCP_EVENT:
-  CONNECT: 'c'
-  DISCONNECT: 'd'
-  MESSAGE: 'm'
+LOGGER:
+  PATH: 'log'
+
+# ABS   : 절대값
+# REAL  : 실제값
+STAT:
+  VIB: ABS
+  TEMP: REAL
+
+DATABASE:
+  PATH: 'db'
