@@ -14,9 +14,13 @@ router = APIRouter(
 
 @router.get("/machineList")
 async def get_machine_list():
+    res = {}
+
     files = os.listdir(DBConfig.PATH)
     machine_db_list = [name.replace('.db', '') for name in files if '.db' in name]
-    return machine_db_list
+    res['machine_list'] = machine_db_list
+
+    return res
 
 
 @router.get("/hour")
@@ -49,4 +53,5 @@ async def get_anomaly_by_duration(machine: str, start: datetime.date, end: datet
 
     db = MachineDatabase(directory=DBConfig.PATH, name=machine)
     res['anomaly'] = await db.get_anomaly_by_duration(start, end)
+
     return res

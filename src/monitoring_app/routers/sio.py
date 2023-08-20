@@ -10,7 +10,10 @@ def get_router(sio: socketio.AsyncServer):
 
     @router.get("/machineList")
     async def get_machine_list():
+        res = {}
         machine_list = list(sio.namespace_handlers.keys())
-        return machine_list
+        res['machine_list'] = machine_list
+
+        return res
 
     return router
