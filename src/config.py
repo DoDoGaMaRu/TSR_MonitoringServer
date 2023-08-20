@@ -1,7 +1,6 @@
 import yaml
 
 from typing import List
-from enum import Enum, auto
 
 config_file = 'resources/config.yml'
 
@@ -26,6 +25,8 @@ class LoggerConfig:
 
 class DBConfig:
     PATH            : str = cfg['DATABASE']['PATH']
+    HOUR_SUFFIX     : str = '_hour_avg'
+    DAY_SUFFIX      : str = '_day_avg'
 
 
 class StatConfig:

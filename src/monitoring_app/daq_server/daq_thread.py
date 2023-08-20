@@ -4,7 +4,7 @@ from asyncio import transports
 from multiprocessing import connection
 
 from config import ServerConfig
-from .data_controller import DataController
+from .data_handler import DataHandler
 from .protocols import tcp_recv_protocol, send_protocol, DAQEvent, ProtocolException
 
 
@@ -12,7 +12,7 @@ class DAQThread(asyncio.Protocol):
     def __init__(self, w_conn: connection.Connection):
         self.w_conn = w_conn
 
-        self.dc = None
+        self.data_handler = None
         self.machine_name = None
         self.peer_name = None
         self.transport = None
@@ -33,14 +33,14 @@ class DAQThread(asyncio.Protocol):
     async def set_machine_name(self):
         self.machine_name = (await self.reader.readuntil(ServerConfig.SEP))[:-ServerConfig.SEP_LEN].decode()
         self.w_conn.send(send_protocol(event=DAQEvent.CONNECT, machine_name=self.machine_name))
-        self.dc = DataController(self.machine_name)
+        self.data_handler = DataHandler(self.machine_name)
 
     async def handle_messages(self):
         while True:
             try:
                 machine_event, data = tcp_recv_protocol(await self.reader.readuntil(ServerConfig.SEP))
 
-                await self.dc.add_data(machine_event, data)
+                await self.data_handler.save_data(machine_event, data)
                 self.w_conn.send(send_protocol(event=DAQEvent.MESSAGE,
                                                machine_name=self.machine_name,
                                                machine_msg=(machine_event, data)))
