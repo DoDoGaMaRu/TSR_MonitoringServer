@@ -24,7 +24,6 @@ async def get_stat_per_hour(machine: str, date: datetime.date):
     res = {}
 
     db = MachineDatabase(directory=DBConfig.PATH, name=machine)
-    print(db.get_table_list())
     table_names = [name for name in db.get_table_list() if DBConfig.HOUR_SUFFIX in name]
     for name in table_names:
         res[name] = await db.get_stat_by_one_day(name, date)
