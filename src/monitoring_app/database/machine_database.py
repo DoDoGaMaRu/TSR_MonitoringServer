@@ -72,7 +72,7 @@ class MachineDatabase(BaseAdaptiveDatabase):
             cur.execute(f'SELECT DATE(time), AVG(data) '
                         f'FROM {stat_name} WHERE DATE(time) == ?',
                         (t_date,))
-            return cur.fetchone()
+            return cur.fetchone()[1]
 
         return await self.execute(query)
 

@@ -13,7 +13,7 @@ def day(time_str: str) -> str:
     return time_str[:-2]
 
 
-class TimeChecker:
+class TimeEvent:
     def __init__(self):
         self.prev = get_time()
 

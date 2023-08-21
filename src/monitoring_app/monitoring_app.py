@@ -20,12 +20,12 @@ class DAQHandler(EventHandler):
         self.sio = sio
 
     async def __call__(self, daq_event: DAQEvent, machine_name: str, machine_msg: Tuple[str, object]):
-        namespace = '/sio/' + machine_name
+        namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
 
         if daq_event == DAQEvent.CONNECT:
             print(f'{machine_name} connected')
-            dynamic_namespace_handler = CustomNamespace(namespace=namespace)
-            self.sio.register_namespace(namespace_handler=dynamic_namespace_handler)
+            daq_namespace = CustomNamespace(namespace=namespace)
+            self.sio.register_namespace(namespace_handler=daq_namespace)
 
         elif daq_event == DAQEvent.DISCONNECT:
             del self.sio.namespace_handlers[namespace]

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from typing import Dict
 
 from config import StatConfig, DBConfig
-from util.clock import TimeChecker
+from util.clock import TimeEvent
 from monitoring_app.database import MachineDatabase
 
 
@@ -30,7 +30,7 @@ class Statistics:
     def __init__(self, machine_name, db: MachineDatabase):
         self.machine_name = machine_name
 
-        self.time = TimeChecker()
+        self.time = TimeEvent()
         self.stats: Dict[str, Stat] = {}
         self.db = db
 

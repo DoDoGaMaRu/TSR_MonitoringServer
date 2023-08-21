@@ -14,6 +14,7 @@ class ServerConfig:
     TCP_PORT        : int = cfg['TCP_SERVER']['TCP_PORT']
     CORS_ORIGINS    : List[str] = [origin.strip() for origin in cfg['TCP_SERVER']['CORS_ORIGINS'].split(',')]
 
+    SIO_PREFIX      : str = '/sio'
     SEP             : bytes = b'\o'
     SEP_LEN         : int = len(SEP)
 
