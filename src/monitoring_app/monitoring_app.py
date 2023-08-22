@@ -4,8 +4,9 @@ import logging
 import socketio
 
 from typing import Tuple
-from fastapi import FastAPI
 from uvicorn import Config, Server
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from util import logger
 from config import ServerConfig, LoggerConfig
@@ -38,11 +39,16 @@ class MachineHandler(EventHandler):
 
 class MonitoringApp:
     def __init__(self):
-        self.app = FastAPI()
         self.host = ServerConfig.HOST
         self.port = ServerConfig.PORT
+        self.app = FastAPI()
+        self.app.add_middleware(CORSMiddleware,
+                                allow_origins=ServerConfig.CORS_ORIGINS,
+                                allow_credentials=True,
+                                allow_methods=["*"],
+                                allow_headers=["*"],)
         self.sio = socketio.AsyncServer(async_mode='asgi',
-                                        cors_allowed_origins=ServerConfig.CORS_ORIGINS)
+                                        cors_allowed_origins=ServerConfig.CORS_ORIGINS,)
         self.loop = asyncio.get_event_loop()
 
         self.machine_server_runner = Runner(host=self.host,
