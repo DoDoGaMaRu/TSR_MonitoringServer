@@ -11,27 +11,27 @@ from util import logger
 from config import ServerConfig, LoggerConfig
 
 from .routers import get_sio_router, stat_router
-from .daq_server import Runner, DAQEvent, EventHandler
+from .machine_server import Runner, MachineEvent, EventHandler
 from .custom_namespace import CustomNamespace
 
 
-class DAQHandler(EventHandler):
+class MachineHandler(EventHandler):
     def __init__(self, sio):
         self.sio = sio
 
-    async def __call__(self, daq_event: DAQEvent, machine_name: str, machine_msg: Tuple[str, object]):
+    async def __call__(self, machine_event: MachineEvent, machine_name: str, machine_msg: Tuple[str, object]):
         namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
 
-        if daq_event == DAQEvent.MESSAGE:
+        if machine_event == MachineEvent.MESSAGE:
             event, data = machine_msg
             await self.sio.emit(namespace=namespace, event=event, data=data)
 
-        elif daq_event == DAQEvent.CONNECT:
+        elif machine_event == MachineEvent.CONNECT:
             print(f'{machine_name} connected')
-            daq_namespace = CustomNamespace(namespace=namespace)
-            self.sio.register_namespace(namespace_handler=daq_namespace)
+            machine_namespace = CustomNamespace(namespace=namespace)
+            self.sio.register_namespace(namespace_handler=machine_namespace)
 
-        elif daq_event == DAQEvent.DISCONNECT:
+        elif machine_event == MachineEvent.DISCONNECT:
             del self.sio.namespace_handlers[namespace]
             print(f'{machine_name} disconnected')
 
@@ -45,9 +45,9 @@ class MonitoringApp:
                                         cors_allowed_origins=ServerConfig.CORS_ORIGINS)
         self.loop = asyncio.get_event_loop()
 
-        self.daq_server_runner = Runner(host=self.host,
-                                        port=ServerConfig.TCP_PORT,
-                                        event_handler=DAQHandler(self.sio))
+        self.machine_server_runner = Runner(host=self.host,
+                                            port=ServerConfig.TCP_PORT,
+                                            event_handler=MachineHandler(self.sio))
         self._set_logger()
         self._configure_event()
         self._configure_routes()
@@ -92,9 +92,9 @@ class MonitoringApp:
             self.loop = asyncio.get_event_loop()
             web_server = self._server_load()
 
-            self.daq_server_runner.run()
+            self.machine_server_runner.run()
             self.loop.run_until_complete(web_server.serve())
 
-            self.daq_server_runner.join()
+            self.machine_server_runner.join()
         except Exception as e:
             print(f"An error occurred: {e}")

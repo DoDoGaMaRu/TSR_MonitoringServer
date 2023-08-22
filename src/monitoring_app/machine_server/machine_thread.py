@@ -5,10 +5,10 @@ from multiprocessing import connection
 
 from config import ServerConfig
 from .data_handler import DataHandler
-from .protocols import tcp_recv_protocol, send_protocol, DAQEvent, ProtocolException
+from .protocols import tcp_recv_protocol, send_protocol, MachineEvent, ProtocolException
 
 
-class DAQThread(asyncio.Protocol):
+class MachineThread(asyncio.Protocol):
     def __init__(self, w_conn: connection.Connection):
         self.w_conn = w_conn
 
@@ -32,7 +32,7 @@ class DAQThread(asyncio.Protocol):
 
     async def set_machine_name(self):
         self.machine_name = (await self.reader.readuntil(ServerConfig.SEP))[:-ServerConfig.SEP_LEN].decode()
-        self.w_conn.send(send_protocol(event=DAQEvent.CONNECT, machine_name=self.machine_name))
+        self.w_conn.send(send_protocol(event=MachineEvent.CONNECT, machine_name=self.machine_name))
         self.data_handler = DataHandler(self.machine_name)
 
     async def handle_messages(self):
@@ -41,7 +41,7 @@ class DAQThread(asyncio.Protocol):
                 machine_event, data = tcp_recv_protocol(await self.reader.readuntil(ServerConfig.SEP))
 
                 await self.data_handler.save_data(machine_event, data)
-                self.w_conn.send(send_protocol(event=DAQEvent.MESSAGE,
+                self.w_conn.send(send_protocol(event=MachineEvent.MESSAGE,
                                                machine_name=self.machine_name,
                                                machine_msg=(machine_event, data)))
             except ProtocolException:
@@ -56,6 +56,6 @@ class DAQThread(asyncio.Protocol):
         asyncio.create_task(self.handle_messages())
 
     def connection_lost(self, exc) -> None:
-        self.w_conn.send(send_protocol(event=DAQEvent.DISCONNECT, machine_name=self.machine_name))
+        self.w_conn.send(send_protocol(event=MachineEvent.DISCONNECT, machine_name=self.machine_name))
         self.writer.close()
         print(f'connection lost {self.machine_name}')
