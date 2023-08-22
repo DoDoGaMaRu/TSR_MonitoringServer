@@ -1,2 +1,2 @@
 from .runner import Runner, EventHandler
-from .protocols import DAQEvent
+from .protocols import MachineEvent

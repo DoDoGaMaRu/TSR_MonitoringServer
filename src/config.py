@@ -12,7 +12,7 @@ class ServerConfig:
     HOST            : str = cfg['TCP_SERVER']['HOST']
     PORT            : int = cfg['TCP_SERVER']['PORT']
     TCP_PORT        : int = cfg['TCP_SERVER']['TCP_PORT']
-    CORS_ORIGINS    : List[str] = [origin.strip() for origin in cfg['TCP_SERVER']['CORS_ORIGINS'].split(',')]
+    CORS_ORIGINS    : List[str] = cfg['TCP_SERVER']['CORS_ORIGINS']
 
     SIO_PREFIX      : str = '/sio'
     SEP             : bytes = b'\o'

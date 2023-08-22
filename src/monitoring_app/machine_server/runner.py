@@ -4,13 +4,16 @@ import asyncio
 from typing import Tuple
 from multiprocessing import Process, Pipe
 
-from .protocols import recv_protocol, DAQEvent
-from .daq_thread import DAQThread
+from .protocols import recv_protocol, MachineEvent
+from .machine_thread import MachineThread
 
 
 class EventHandler(abc.ABC):
     @abc.abstractmethod
-    async def __call__(self, daq_event: DAQEvent, machine_name: str, machine_msg: Tuple[str, object]):
+    async def __call__(self,
+                       machine_event: MachineEvent,
+                       machine_name: str,
+                       machine_msg: Tuple[str, object]):
         pass
 
 
@@ -24,12 +27,12 @@ class Runner:
         self.event_handler = event_handler
         self.r_conn, self.w_conn = Pipe(duplex=False)
 
-        self.daq_server_process = None
+        self.machine_server_process = None
 
-    def _daq_server_process(self):
+    def _run_machine_server(self):
         try:
             loop = asyncio.get_event_loop()
-            server = loop.run_until_complete(loop.create_server(protocol_factory=lambda: DAQThread(self.w_conn),
+            server = loop.run_until_complete(loop.create_server(protocol_factory=lambda: MachineThread(self.w_conn),
                                                                 host=self.host,
                                                                 port=self.port))
             loop.run_until_complete(server.wait_closed())
@@ -43,16 +46,16 @@ class Runner:
             if tcp_msg is None:
                 break
 
-            daq_event, machine_name, machine_msg = recv_protocol(tcp_msg)
-            await self.event_handler(daq_event, machine_name, machine_msg)
+            machine_event, machine_name, machine_msg = recv_protocol(tcp_msg)
+            await self.event_handler(machine_event, machine_name, machine_msg)
 
     def run(self):
         loop = asyncio.get_event_loop()
         loop.create_task(self.pipe_rcv_event())
 
-        self.daq_server_process = Process(target=self._daq_server_process, daemon=True)
-        self.daq_server_process.start()
+        self.machine_server_process = Process(target=self._run_machine_server, daemon=True)
+        self.machine_server_process.start()
 
     def join(self):
         self.r_conn.close()
-        self.daq_server_process.join()
+        self.machine_server_process.join()

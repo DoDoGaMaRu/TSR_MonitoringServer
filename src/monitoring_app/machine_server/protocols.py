@@ -11,13 +11,13 @@ class ProtocolException(Exception):
     pass
 
 
-class DAQEvent(Enum):
+class MachineEvent(Enum):
     CONNECT: int = auto()
     DISCONNECT: int = auto()
     MESSAGE: int = auto()
 
 
-def send_protocol(event: DAQEvent, machine_name: str, machine_msg: Tuple[str, object] = None):
+def send_protocol(event: MachineEvent, machine_name: str, machine_msg: Tuple[str, object] = None):
     try:
         with io.BytesIO() as memfile:
             pickle.dump((event, machine_name, machine_msg), memfile)
