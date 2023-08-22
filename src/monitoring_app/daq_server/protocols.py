@@ -14,7 +14,7 @@ class DAQEvent(Enum):
     MESSAGE: int = auto()
 
 
-def send_protocol(event, machine_name, machine_msg: Tuple[str, object] = None):
+def send_protocol(event: DAQEvent, machine_name: str, machine_msg: Tuple[str, object] = None):
     try:
         with io.BytesIO() as memfile:
             pickle.dump((event, machine_name, machine_msg), memfile)
@@ -24,7 +24,7 @@ def send_protocol(event, machine_name, machine_msg: Tuple[str, object] = None):
     return serialized
 
 
-def recv_protocol(msg):
+def recv_protocol(msg: bytes):
     try:
         with io.BytesIO() as memfile:
             memfile.write(msg)
