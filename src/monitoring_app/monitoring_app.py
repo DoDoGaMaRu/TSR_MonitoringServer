@@ -22,7 +22,11 @@ class DAQHandler(EventHandler):
     async def __call__(self, daq_event: DAQEvent, machine_name: str, machine_msg: Tuple[str, object]):
         namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
 
-        if daq_event == DAQEvent.CONNECT:
+        if daq_event == DAQEvent.MESSAGE:
+            event, data = machine_msg
+            await self.sio.emit(namespace=namespace, event=event, data=data)
+
+        elif daq_event == DAQEvent.CONNECT:
             print(f'{machine_name} connected')
             daq_namespace = CustomNamespace(namespace=namespace)
             self.sio.register_namespace(namespace_handler=daq_namespace)
@@ -30,10 +34,6 @@ class DAQHandler(EventHandler):
         elif daq_event == DAQEvent.DISCONNECT:
             del self.sio.namespace_handlers[namespace]
             print(f'{machine_name} disconnected')
-
-        elif daq_event == DAQEvent.MESSAGE:
-            event, data = machine_msg
-            await self.sio.emit(namespace=namespace, event=event, data=data)
 
 
 class MonitoringApp:

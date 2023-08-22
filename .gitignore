@@ -133,3 +133,5 @@ dmypy.json
 /resource/prognostics.pth
 /socketLog/
 /db/
+/src/db/
+/src/log/

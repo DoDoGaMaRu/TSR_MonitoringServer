@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict
 
 from config import StatConfig, DBConfig
@@ -36,13 +36,13 @@ class Statistics:
 
     async def add_data(self, device_type, data: dict):
         for sensor_name, value in data.items():
-            if sensor_name not in self.stats:
+            if sensor_name in self.stats:
+                self.stats[sensor_name].add(value)
+            else:
                 self.stats[sensor_name] = Stat(device_type)
                 self.db.init_stat_table(sensor_name + DBConfig.HOUR_SUFFIX)
                 self.db.init_stat_table(sensor_name + DBConfig.DAY_SUFFIX)
-
-            self.stats[sensor_name].add(value)
-
+                self.stats[sensor_name].add(value)
         await self.trigger()
 
     async def trigger(self):
@@ -57,12 +57,16 @@ class Statistics:
         for sensor_name, stat in self.stats.items():
             day_avg = await self.db.get_stat_avg_of_date(stat_name=sensor_name + DBConfig.HOUR_SUFFIX,
                                                          t_date=last_date)
-            await self.db.save_stat(sensor_name + DBConfig.DAY_SUFFIX, data=day_avg)
+            await self.db.save_stat(stat_name=sensor_name + DBConfig.DAY_SUFFIX,
+                                    data=day_avg,
+                                    time=datetime.now() - timedelta(days=1))
 
     async def save_hour_avg(self):
         for sensor_name, stat in self.stats.items():
             hour_avg = stat.get_average()
-            await self.db.save_stat(sensor_name + DBConfig.HOUR_SUFFIX, data=hour_avg)
+            await self.db.save_stat(stat_name=sensor_name + DBConfig.HOUR_SUFFIX,
+                                    data=hour_avg,
+                                    time=datetime.now() - timedelta(hours=1))
 
 
 class DataHandler:

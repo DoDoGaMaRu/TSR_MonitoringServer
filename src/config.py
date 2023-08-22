@@ -35,5 +35,5 @@ class StatConfig:
 
     _STAT_MODE = {'ABS': lambda data: list(map(abs, data)),
                   'REAL': lambda data: data}
-    for key in MODE.keys():
-        MODE[key] = _STAT_MODE[MODE[key]]
+    for sensor_type, mode in MODE.items():
+        MODE[sensor_type] = _STAT_MODE[mode]

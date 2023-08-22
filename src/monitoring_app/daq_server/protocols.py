@@ -9,9 +9,9 @@ class ProtocolException(Exception):
 
 
 class DAQEvent(Enum):
-    CONNECT: str = auto()
-    DISCONNECT: str = auto()
-    MESSAGE: str = auto()
+    CONNECT: int = auto()
+    DISCONNECT: int = auto()
+    MESSAGE: int = auto()
 
 
 def send_protocol(event, machine_name, machine_msg: Tuple[str, object] = None):

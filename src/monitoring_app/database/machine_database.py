@@ -3,7 +3,6 @@ from datetime import date, datetime
 
 from ._database import BaseAdaptiveDatabase, Column, Dtype
 
-
 _ANOMALY_TABLE_NAME = 'anomaly'
 
 
@@ -32,11 +31,15 @@ class MachineDatabase(BaseAdaptiveDatabase):
                                 Column(name='data', dtype=Dtype.REAL)
                             ])
 
-    async def save_stat(self, stat_name: str, data: float):
+    async def save_stat(self, stat_name: str, data: float, time: datetime = None):
+        if time is None:
+            time = datetime.now()
+
         def query(conn):
             cur = conn.cursor()
             cur.execute(f'INSERT INTO {stat_name}(time, data) VALUES (?, ?)',
-                        (datetime.now(), data))
+                        (time, data))
+
         await self.execute(query)
 
     async def save_anomaly(self, threshold: float, score: float):
@@ -44,6 +47,7 @@ class MachineDatabase(BaseAdaptiveDatabase):
             cur = conn.cursor()
             cur.execute(f'INSERT INTO {_ANOMALY_TABLE_NAME}(date, threshold, score) VALUES (?, ?, ?)',
                         (datetime.now(), threshold, score))
+
         await self.execute(query)
 
     async def get_stat_by_one_day(self, stat_name: str, t_date: date):
