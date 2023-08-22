@@ -5,6 +5,8 @@ from config import StatConfig, DBConfig
 from util.clock import TimeEvent
 from monitoring_app.database import MachineDatabase
 
+from .protocols import MSG_SEP_TOKEN
+
 
 class Stat:
     def __init__(self, sensor_type):
@@ -76,9 +78,9 @@ class DataHandler:
         self.statistics = Statistics(self.machine_name, self.db)
 
     async def save_data(self, machine_event, data: dict):
-        if ':' in machine_event:
+        if MSG_SEP_TOKEN in machine_event:
             del data['time']
-            device_type, device_name = machine_event.split(':')
+            device_type, device_name = machine_event.split(MSG_SEP_TOKEN)
             await self.statistics.add_data(device_type, data)
 
         else:

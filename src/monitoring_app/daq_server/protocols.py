@@ -4,6 +4,9 @@ from enum import Enum, auto
 from typing import Tuple
 
 
+MSG_SEP_TOKEN = '.'
+
+
 class ProtocolException(Exception):
     pass
 
