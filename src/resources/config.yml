@@ -4,6 +4,9 @@ TCP_SERVER:
   TCP_PORT: 8082
   CORS_ORIGINS: ['*']
 
+FCM:
+  API_KEY:
+
 LOGGER:
   PATH: 'log'
 

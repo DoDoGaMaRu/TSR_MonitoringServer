@@ -45,7 +45,7 @@ class MachineDatabase(BaseAdaptiveDatabase):
     async def save_anomaly(self, threshold: float, score: float):
         def query(conn):
             cur = conn.cursor()
-            cur.execute(f'INSERT INTO {_ANOMALY_TABLE_NAME}(date, threshold, score) VALUES (?, ?, ?)',
+            cur.execute(f'INSERT INTO {_ANOMALY_TABLE_NAME}(time, threshold, score) VALUES (?, ?, ?)',
                         (datetime.now(), threshold, score))
 
         await self.execute(query)

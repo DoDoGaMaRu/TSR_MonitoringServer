@@ -3,7 +3,6 @@ import asyncio
 from asyncio import transports
 from multiprocessing import connection
 
-from config import ServerConfig
 from .data_handler import DataHandler
 from .protocols import tcp_recv_protocol, send_protocol, MachineEvent, ProtocolException
 
@@ -31,16 +30,17 @@ class MachineThread(asyncio.Protocol):
         asyncio.create_task(self.set_machine_name())
 
     async def set_machine_name(self):
-        self.machine_name = (await self.reader.readuntil(ServerConfig.SEP))[:-ServerConfig.SEP_LEN].decode()
+        machine_event, data = await tcp_recv_protocol(self.reader)
+        self.machine_name = data
         self.w_conn.send(send_protocol(event=MachineEvent.CONNECT, machine_name=self.machine_name))
         self.data_handler = DataHandler(self.machine_name)
 
     async def handle_messages(self):
         while True:
             try:
-                machine_event, data = tcp_recv_protocol(await self.reader.readuntil(ServerConfig.SEP))
+                machine_event, data = await tcp_recv_protocol(self.reader)
 
-                await self.data_handler.save_data(machine_event, data)
+                await self.data_handler.data_processing(machine_event, data)
                 self.w_conn.send(send_protocol(event=MachineEvent.MESSAGE,
                                                machine_name=self.machine_name,
                                                machine_msg=(machine_event, data)))
@@ -58,4 +58,3 @@ class MachineThread(asyncio.Protocol):
     def connection_lost(self, exc) -> None:
         self.w_conn.send(send_protocol(event=MachineEvent.DISCONNECT, machine_name=self.machine_name))
         self.writer.close()
-        print(f'connection lost {self.machine_name}')

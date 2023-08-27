@@ -13,10 +13,11 @@ class ServerConfig:
     PORT            : int = cfg['TCP_SERVER']['PORT']
     TCP_PORT        : int = cfg['TCP_SERVER']['TCP_PORT']
     CORS_ORIGINS    : List[str] = cfg['TCP_SERVER']['CORS_ORIGINS']
-
     SIO_PREFIX      : str = '/sio'
-    SEP             : bytes = b'\o'
-    SEP_LEN         : int = len(SEP)
+
+
+class FCMConfig:
+    API_KEY         : str = cfg['FCM']['API_KEY']
 
 
 class LoggerConfig:
