@@ -1,4 +1,8 @@
-from pyfcm import FCMNotification
+from datetime import datetime, timedelta
+
+import firebase_admin
+
+from firebase_admin import credentials, messaging
 from config import FCMConfig
 
 
@@ -12,22 +16,26 @@ class FCMSender(object):
         cls = type(self)
         if not hasattr(cls, "_init"):
             self._init_fcm()
+            self.limit_time = datetime.now()
+            self.timeout = FCMConfig.TIMEOUT
             cls._init = True
 
     def _init_fcm(self):
         try:
-            self.push_service = FCMNotification(FCMConfig.API_KEY)
+            self.cred = credentials.Certificate(FCMConfig.CRED_PATH)
+            firebase_admin.initialize_app(self.cred)
+            self.open = True
         except:
-            self.push_service = None
+            self.open = False
 
-    def send(self, topic: str, title, body):
-        print(title, body)
-        if self.push_service is not None:
-            message = {
-                'title': title,
-                'body': body
-            }
-
-            res = self.push_service.notify_topic_subscribers(topic_name=topic,
-                                                             data_message=message)
-            print(res)
+    async def send(self, topic: str, title, body):
+        if self.open and self.limit_time < datetime.now():
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body
+                ),
+                topic=topic
+            )
+            messaging.send(message)
+            self.limit_time = self.limit_time + timedelta(seconds=self.timeout)

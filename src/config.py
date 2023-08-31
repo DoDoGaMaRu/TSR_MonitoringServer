@@ -17,7 +17,8 @@ class ServerConfig:
 
 
 class FCMConfig:
-    API_KEY         : str = cfg['FCM']['API_KEY']
+    CRED_PATH       : str = cfg['FCM']['CRED_PATH']
+    TIMEOUT         : int = cfg['FCM']['TIMEOUT']
 
 
 class LoggerConfig:

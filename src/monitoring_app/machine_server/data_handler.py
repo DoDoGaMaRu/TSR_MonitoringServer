@@ -78,7 +78,7 @@ class DataHandler:
         self.machine_name = machine_name
         self.db = MachineDatabase(directory=DBConfig.PATH, name=self.machine_name)
         self.statistics = Statistics(self.machine_name, self.db)
-        # self.fcm_sender = FCMSender()
+        self.fcm_sender = FCMSender()
 
     async def data_processing(self, machine_event, data: dict):
         if MSG_SEP_TOKEN in machine_event:
@@ -86,8 +86,7 @@ class DataHandler:
             await self.statistics.add_data(device_type, data)
 
         elif machine_event == 'anomaly':
-            # await self._anomaly_handle(data)
-            pass
+            await self._anomaly_handle(data)
 
     async def _anomaly_handle(self, data: dict):
         if data['anomaly']:
@@ -95,6 +94,6 @@ class DataHandler:
             threshold = data["threshold"]
 
             await self.db.save_anomaly(score=score, threshold=threshold)
-            self.fcm_sender.send(topic='anomaly',
-                                 title=f'{self.machine_name} 이상치 감지',
-                                 body=f'상세 정보 : {score}/{threshold}')
+            await self.fcm_sender.send(topic='anomaly',
+                                       title=f'{self.machine_name} 이상치 감지',
+                                       body=f'상세 정보 : {score}/{threshold}')

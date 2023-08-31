@@ -5,7 +5,8 @@ TCP_SERVER:
   CORS_ORIGINS: ['*']
 
 FCM:
-  API_KEY:
+  CRED_PATH: resources/tsr-monitoring-app-c08931e07d1a.json
+  TIMEOUT: 120
 
 LOGGER:
   PATH: 'log'
