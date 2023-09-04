@@ -4,7 +4,7 @@ import os
 from fastapi import APIRouter
 
 from config import DBConfig
-from monitoring_app.database import MachineDatabase
+from database import MachineDatabase
 
 
 router = APIRouter(

@@ -1,11 +1,13 @@
-from datetime import date, datetime, timedelta
 from typing import Dict
+from datetime import date, datetime, timedelta
 
 from config import StatConfig, DBConfig
 from util.clock import TimeEvent
-from monitoring_app.database import MachineDatabase
+from database import MachineDatabase
+from util.fcm_sender import FCMSender
 
-from .protocols import MSG_SEP_TOKEN
+
+MSG_SEP_TOKEN = '.'
 
 
 class Stat:
@@ -76,13 +78,22 @@ class DataHandler:
         self.machine_name = machine_name
         self.db = MachineDatabase(directory=DBConfig.PATH, name=self.machine_name)
         self.statistics = Statistics(self.machine_name, self.db)
+        self.fcm_sender = FCMSender()
 
-    async def save_data(self, machine_event, data: dict):
+    async def data_processing(self, machine_event, data: dict):
         if MSG_SEP_TOKEN in machine_event:
-            del data['time']
             device_type, device_name = machine_event.split(MSG_SEP_TOKEN)
             await self.statistics.add_data(device_type, data)
 
-        else:
-            # is anomaly data or something
-            pass
+        elif machine_event == 'anomaly':
+            await self._anomaly_handle(data)
+
+    async def _anomaly_handle(self, data: dict):
+        if data['anomaly']:
+            score = data["score"]
+            threshold = data["threshold"]
+
+            await self.db.save_anomaly(score=score, threshold=threshold)
+            await self.fcm_sender.send(topic='anomaly',
+                                       title=f'{self.machine_name} 이상치 감지',
+                                       body=f'상세 정보 : {score}/{threshold}')

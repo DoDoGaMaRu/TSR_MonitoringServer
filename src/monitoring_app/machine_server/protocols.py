@@ -1,10 +1,13 @@
 import io
 import pickle
+import asyncio
+
 from enum import Enum, auto
 from typing import Tuple
 
 
-MSG_SEP_TOKEN = '.'
+SEP: bytes = b'\o'
+SEP_LEN: int = len(SEP)
 
 
 class ProtocolException(Exception):
@@ -38,10 +41,11 @@ def recv_protocol(msg: bytes):
     return tcp_event, machine_name, machine_msg
 
 
-def tcp_recv_protocol(msg: bytes):
+async def tcp_recv_protocol(reader: asyncio.StreamReader):
+    serialized = (await reader.readuntil(SEP))[:-SEP_LEN]
     try:
         with io.BytesIO() as memfile:
-            memfile.write(msg)
+            memfile.write(serialized)
             memfile.seek(0)
             event, data = pickle.load(memfile)
     except Exception:

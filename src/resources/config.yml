@@ -1,8 +1,12 @@
-TCP_SERVER:
+SERVER:
   HOST: '192.168.0.8'
   PORT: 8080
   TCP_PORT: 8082
   CORS_ORIGINS: ['*']
+
+FCM:
+  CRED_PATH: resources/tsr-monitoring-app-c08931e07d1a.json
+  TIMEOUT: 120
 
 LOGGER:
   PATH: 'log'

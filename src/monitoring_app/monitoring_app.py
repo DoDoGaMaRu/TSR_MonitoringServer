@@ -17,24 +17,27 @@ from .custom_namespace import CustomNamespace
 
 
 class MachineHandler(EventHandler):
-    def __init__(self, sio):
+    def __init__(self, sio, machine_logger, sio_logger):
         self.sio = sio
+        self.machine_logger = machine_logger
+        self.sio_logger = sio_logger
 
     async def __call__(self, machine_event: MachineEvent, machine_name: str, machine_msg: Tuple[str, object]):
-        namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
+        if machine_name is not None:
+            namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
 
-        if machine_event == MachineEvent.MESSAGE:
-            event, data = machine_msg
-            await self.sio.emit(namespace=namespace, event=event, data=data)
+            if machine_event == MachineEvent.MESSAGE:
+                event, data = machine_msg
+                await self.sio.emit(namespace=namespace, event=event, data=data)
 
-        elif machine_event == MachineEvent.CONNECT:
-            print(f'{machine_name} connected')
-            machine_namespace = CustomNamespace(namespace=namespace)
-            self.sio.register_namespace(namespace_handler=machine_namespace)
+            elif machine_event == MachineEvent.CONNECT:
+                machine_namespace = CustomNamespace(namespace=namespace, logger=self.sio_logger)
+                self.sio.register_namespace(namespace_handler=machine_namespace)
+                self.machine_logger.info(f'{machine_name} connected')
 
-        elif machine_event == MachineEvent.DISCONNECT:
-            del self.sio.namespace_handlers[namespace]
-            print(f'{machine_name} disconnected')
+            elif machine_event == MachineEvent.DISCONNECT:
+                del self.sio.namespace_handlers[namespace]
+                self.machine_logger.info(f'{machine_name} disconnected')
 
 
 class MonitoringApp:
@@ -45,18 +48,19 @@ class MonitoringApp:
         self.app.add_middleware(CORSMiddleware,
                                 allow_origins=ServerConfig.CORS_ORIGINS,
                                 allow_credentials=True,
-                                allow_methods=["*"],
-                                allow_headers=["*"],)
+                                allow_methods=['*'],
+                                allow_headers=['*'],)
         self.sio = socketio.AsyncServer(async_mode='asgi',
-                                        cors_allowed_origins=ServerConfig.CORS_ORIGINS,)
+                                        cors_allowed_origins='*',)
         self.loop = asyncio.get_event_loop()
 
-        self.machine_server_runner = Runner(host=self.host,
-                                            port=ServerConfig.TCP_PORT,
-                                            event_handler=MachineHandler(self.sio))
         self._set_logger()
         self._configure_event()
         self._configure_routes()
+
+        self.machine_server_runner = Runner(host=self.host,
+                                            port=ServerConfig.TCP_PORT,
+                                            event_handler=MachineHandler(self.sio, self.machine_logger, self.sio_logger))
 
     def _server_load(self) -> Server:
         uvicorn_log_config = uvicorn.config.LOGGING_CONFIG
@@ -71,13 +75,15 @@ class MonitoringApp:
         return Server(config)
 
     def _set_logger(self):
-        pass
+        self.machine_logger = logger.get_logger(name='machine', log_level=logging.INFO, save_path=LoggerConfig.PATH)
+        self.sio_logger = logger.get_logger(name='sio.access', log_level=logging.INFO, save_path=LoggerConfig.PATH)
 
     def _configure_event(self):
         @self.app.on_event("startup")
         async def startup_event():
             uvicorn_error = logging.getLogger('uvicorn.error')
             uvicorn_access = logging.getLogger('uvicorn.access')
+            uvicorn_error.setLevel(logging.ERROR)
 
             formatter = logging.Formatter(LoggerConfig.FORMAT)
             uvicorn_error.addHandler(logger.get_file_handler(path=LoggerConfig.PATH,
