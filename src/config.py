@@ -9,10 +9,10 @@ with open(config_file, 'r', encoding='UTF-8') as yml:
 
 
 class ServerConfig:
-    HOST            : str = cfg['TCP_SERVER']['HOST']
-    PORT            : int = cfg['TCP_SERVER']['PORT']
-    TCP_PORT        : int = cfg['TCP_SERVER']['TCP_PORT']
-    CORS_ORIGINS    : List[str] = cfg['TCP_SERVER']['CORS_ORIGINS']
+    HOST            : str = cfg['SERVER']['HOST']
+    PORT            : int = cfg['SERVER']['PORT']
+    TCP_PORT        : int = cfg['SERVER']['TCP_PORT']
+    CORS_ORIGINS    : List[str] = cfg['SERVER']['CORS_ORIGINS']
     SIO_PREFIX      : str = '/sio'
 
 

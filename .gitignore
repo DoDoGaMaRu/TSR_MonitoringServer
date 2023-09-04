@@ -129,9 +129,5 @@ dmypy.json
 .pyre/
 
 
-/resource/model8.pth
-/resource/prognostics.pth
-/socketLog/
-/db/
 /src/db/
 /src/log/
