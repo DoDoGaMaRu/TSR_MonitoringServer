@@ -1,2 +1,2 @@
 from .runner import Runner, EventHandler
-from .protocols import MachineEvent
+from .pipe_serialize import MachineThreadEvent, MachineEvent

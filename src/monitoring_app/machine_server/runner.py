@@ -4,16 +4,18 @@ import asyncio
 from typing import Tuple
 from multiprocessing import Process, Pipe
 
-from .protocols import recv_protocol, MachineEvent
+from monitoring_app.machine_server.pipe_serialize import pipe_deserialize, MachineThreadEvent
+from .data_handler import MachineEvent
 from .machine_thread import MachineThread
 
 
 class EventHandler(abc.ABC):
     @abc.abstractmethod
     async def __call__(self,
-                       machine_event: MachineEvent,
+                       event: MachineThreadEvent,
                        machine_name: str,
-                       machine_msg: Tuple[str, object]):
+                       machine_event: MachineEvent,
+                       data: any):
         pass
 
 
@@ -32,9 +34,13 @@ class Runner:
     def _run_machine_server(self):
         try:
             loop = asyncio.get_event_loop()
-            server = loop.run_until_complete(loop.create_server(protocol_factory=lambda: MachineThread(self.w_conn),
-                                                                host=self.host,
-                                                                port=self.port))
+            server = loop.run_until_complete(
+                loop.create_server(
+                    protocol_factory=lambda: MachineThread(self.w_conn),
+                    host=self.host,
+                    port=self.port
+                )
+            )
             loop.run_until_complete(server.wait_closed())
         except KeyboardInterrupt:
             self.w_conn.close()
@@ -42,12 +48,12 @@ class Runner:
     async def pipe_rcv_event(self):
         loop = asyncio.get_event_loop()
         while True:
-            tcp_msg: bytes = await loop.run_in_executor(None, self.r_conn.recv)
-            if tcp_msg is None:
+            pipe_msg: bytes = await loop.run_in_executor(None, self.r_conn.recv)
+            if pipe_msg is None:
                 break
 
-            machine_event, machine_name, machine_msg = recv_protocol(tcp_msg)
-            await self.event_handler(machine_event, machine_name, machine_msg)
+            machine_thread_event, machine_name, machine_event, data = pipe_deserialize(pipe_msg)
+            await self.event_handler(machine_thread_event, machine_name, machine_event, data)
 
     def run(self):
         loop = asyncio.get_event_loop()
@@ -56,6 +62,6 @@ class Runner:
         self.machine_server_process = Process(target=self._run_machine_server, daemon=True)
         self.machine_server_process.start()
 
-    def join(self):
+    def stop(self):
         self.r_conn.close()
         self.machine_server_process.join()

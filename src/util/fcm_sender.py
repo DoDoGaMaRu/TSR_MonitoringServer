@@ -6,6 +6,7 @@ from firebase_admin import credentials, messaging
 from config import FCMConfig
 
 
+# TODO 싱글톤 문제 있는 것으로 보임, 추후 개선 요망
 class FCMSender(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "_instance"):
