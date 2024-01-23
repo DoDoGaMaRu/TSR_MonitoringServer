@@ -12,30 +12,38 @@ from util import logger
 from config import ServerConfig, LoggerConfig
 
 from .routers import get_sio_router, stat_router
-from .machine_server import Runner, MachineEvent, EventHandler
+from .machine_server import Runner, MachineThreadEvent, MachineEvent, EventHandler
 from .custom_namespace import CustomNamespace
 
 
 class MachineHandler(EventHandler):
+    machine_event_to_str = {
+        MachineEvent.DataUpdate: 'update',
+        MachineEvent.FaultDetect: 'anomaly'
+    }
+
     def __init__(self, sio, machine_logger, sio_logger):
         self.sio = sio
         self.machine_logger = machine_logger
         self.sio_logger = sio_logger
 
-    async def __call__(self, machine_event: MachineEvent, machine_name: str, machine_msg: Tuple[str, object]):
+    async def __call__(self,
+                       event: MachineThreadEvent,
+                       machine_name: str,
+                       machine_event: MachineEvent,
+                       data: any):
         if machine_name is not None:
             namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
 
-            if machine_event == MachineEvent.MESSAGE:
-                event, data = machine_msg
-                await self.sio.emit(namespace=namespace, event=event, data=data)
+            if event == MachineThreadEvent.DATA_UPDATE:
+                await self.sio.emit(namespace=namespace, event=self.machine_event_to_str[machine_event], data=data)
 
-            elif machine_event == MachineEvent.CONNECT:
+            elif event == MachineThreadEvent.CONNECT:
                 machine_namespace = CustomNamespace(namespace=namespace, logger=self.sio_logger)
                 self.sio.register_namespace(namespace_handler=machine_namespace)
                 self.machine_logger.info(f'{machine_name} connected')
 
-            elif machine_event == MachineEvent.DISCONNECT:
+            elif event == MachineThreadEvent.DISCONNECT:
                 del self.sio.namespace_handlers[namespace]
                 self.machine_logger.info(f'{machine_name} disconnected')
 
@@ -107,6 +115,6 @@ class MonitoringApp:
             self.machine_server_runner.run()
             self.loop.run_until_complete(web_server.serve())
 
-            self.machine_server_runner.join()
+            self.machine_server_runner.stop()
         except Exception as e:
             print(f"An error occurred: {e}")

@@ -39,3 +39,6 @@ class StatConfig:
                   'REAL': lambda data: data}
     for sensor_type, mode in MODE.items():
         MODE[sensor_type] = _STAT_MODE[mode]
+
+class DataConfig:
+    PATH            : str = cfg['DATA']['PATH']
