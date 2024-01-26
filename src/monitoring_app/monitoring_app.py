@@ -3,7 +3,6 @@ import uvicorn
 import logging
 import socketio
 
-from typing import Tuple
 from uvicorn import Config, Server
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,11 +16,6 @@ from .custom_namespace import CustomNamespace
 
 
 class MachineHandler(EventHandler):
-    machine_event_to_str = {
-        MachineEvent.DataUpdate: 'update',
-        MachineEvent.FaultDetect: 'anomaly'
-    }
-
     def __init__(self, sio, machine_logger, sio_logger):
         self.sio = sio
         self.machine_logger = machine_logger
@@ -36,10 +30,16 @@ class MachineHandler(EventHandler):
             namespace = f'{ServerConfig.SIO_PREFIX}/{machine_name}'
 
             if event == MachineThreadEvent.DATA_UPDATE:
-                await self.sio.emit(namespace=namespace, event=self.machine_event_to_str[machine_event], data=data)
+                await self.sio.namespace_handlers[namespace].send_machine_event(
+                    machine_event=machine_event,
+                    data=data
+                )
 
             elif event == MachineThreadEvent.CONNECT:
-                machine_namespace = CustomNamespace(namespace=namespace, logger=self.sio_logger)
+                machine_namespace = CustomNamespace(
+                    namespace=namespace,
+                    logger=self.sio_logger
+                )
                 self.sio.register_namespace(namespace_handler=machine_namespace)
                 self.machine_logger.info(f'{machine_name} connected')
 
@@ -94,12 +94,20 @@ class MonitoringApp:
             uvicorn_error.setLevel(logging.ERROR)
 
             formatter = logging.Formatter(LoggerConfig.FORMAT)
-            uvicorn_error.addHandler(logger.get_file_handler(path=LoggerConfig.PATH,
-                                                             name=uvicorn_error.name,
-                                                             formatter=formatter))
-            uvicorn_access.addHandler(logger.get_file_handler(path=LoggerConfig.PATH,
-                                                              name=uvicorn_access.name,
-                                                              formatter=formatter))
+            uvicorn_error.addHandler(
+                logger.get_file_handler(
+                    path=LoggerConfig.PATH,
+                    name=uvicorn_error.name,
+                    formatter=formatter
+                )
+            )
+            uvicorn_access.addHandler(
+                logger.get_file_handler(
+                    path=LoggerConfig.PATH,
+                    name=uvicorn_access.name,
+                    formatter=formatter
+                )
+            )
 
     def _configure_routes(self):
         sio_router = get_sio_router(self.sio)
