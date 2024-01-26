@@ -37,11 +37,39 @@ async def get_stat_per_hour(machine: str, date: datetime.date):
 
 @router.get("/day")
 async def get_stat_per_day(machine: str, start: datetime.date, end: datetime.date):
-    res = []
+    return await get_stat(
+        machine=machine,
+        suffix=DBConfig.DAY_SUFFIX,
+        start=start,
+        end=end
+    )
 
+
+@router.get("/month")
+async def get_stat_per_month(machine: str, start: datetime.date, end: datetime.date):
+    return await get_stat(
+        machine=machine,
+        suffix=DBConfig.MONTH_SUFFIX,
+        start=start,
+        end=end
+    )
+
+
+@router.get("/year")
+async def get_stat_per_year(machine: str, start: datetime.date, end: datetime.date):
+    return await get_stat(
+        machine=machine,
+        suffix=DBConfig.YEAR_SUFFIX,
+        start=start,
+        end=end
+    )
+
+
+async def get_stat(machine: str, suffix: str, start: datetime.date, end: datetime.date) -> list:
+    res = []
     if os.path.isfile(os.path.join(DBConfig.PATH, f'{machine}.db')):
         db = MachineDatabase(directory=DBConfig.PATH, name=machine)
-        table_names = [name for name in db.get_table_list() if DBConfig.DAY_SUFFIX in name]
+        table_names = [name for name in db.get_table_list() if suffix in name]
         for name in table_names:
             datas = await db.get_stat_by_duration(name, start, end)
             res += list(map(lambda e: {'name': name, 'time': e[0], 'data': e[1]}, datas))

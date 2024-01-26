@@ -30,6 +30,8 @@ class DBConfig:
     PATH            : str = cfg['DATABASE']['PATH']
     HOUR_SUFFIX     : str = '_hour_avg'
     DAY_SUFFIX      : str = '_day_avg'
+    MONTH_SUFFIX    : str = '_month_avg'
+    YEAR_SUFFIX     : str = '_year_avg'
 
 
 class StatConfig:

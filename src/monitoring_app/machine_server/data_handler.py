@@ -1,5 +1,4 @@
 import os
-from enum import Enum, auto
 from typing import Dict, List
 from datetime import date, time, datetime, timedelta
 from multiprocessing import connection
@@ -63,17 +62,27 @@ class DataHandler:
     async def _data_update_handle(self, data: Dict):
         if self.time.is_min_change():
             await self._send_min_avg()
-        if self.time.is_hour_change():
-            await self._save_hour_avg()
-        if self.time.is_day_change():
-            await self._save_day_avg()
-            self._init_writers()
+
+            if self.time.is_hour_change():
+                await self._save_hour_avg()
+
+                if self.time.is_day_change():
+                    await self._save_day_avg()
+                    self._init_writers()
+
+                    if self.time.is_month_change():
+                        await self._save_month_avg()
+                        
+                        if self.time.is_year_change():
+                            await self._save_year_avg()
 
         cur_time = get_time()
         for s_name, s_data in data.items():
             if s_name not in self.stats:
                 self.db.init_stat_table(s_name + DBConfig.HOUR_SUFFIX)
                 self.db.init_stat_table(s_name + DBConfig.DAY_SUFFIX)
+                self.db.init_stat_table(s_name + DBConfig.MONTH_SUFFIX)
+                self.db.init_stat_table(s_name + DBConfig.YEAR_SUFFIX)
                 self.stats[s_name] = Stat(s_data['type'])
                 self.min_stats[s_name] = Stat(s_data['type'])
                 self._init_writers()
@@ -120,24 +129,56 @@ class DataHandler:
                 )
             )
 
-    async def _save_day_avg(self):
-        last_date = date.today() - timedelta(days=1)
-        for sensor_name, stat in self.stats.items():
-            day_avg = await self.db.get_stat_avg_of_date(
-                stat_name=sensor_name + DBConfig.HOUR_SUFFIX,
-                t_date=last_date
-            )
-            await self.db.save_stat(
-                stat_name=sensor_name + DBConfig.DAY_SUFFIX,
-                data=day_avg,
-                time=datetime.combine(date=last_date, time=time())
-            )
-
     async def _save_hour_avg(self):
         for sensor_name, stat in self.stats.items():
             hour_avg = stat.get_average()
             await self.db.save_stat(
                 stat_name=sensor_name + DBConfig.HOUR_SUFFIX,
                 data=hour_avg,
-                time=datetime.now() - timedelta(hours=1)
+                time=(datetime.now()-timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+            )
+
+    async def _save_day_avg(self):
+        cur_date = datetime.combine(date=date.today(), time=time())
+        last_date = cur_date-timedelta(days=1)
+        for sensor_name, stat in self.stats.items():
+            day_avg = await self.db.get_stat_avg(
+                stat_name=sensor_name + DBConfig.HOUR_SUFFIX,
+                start=last_date,
+                end=cur_date
+            )
+            await self.db.save_stat(
+                stat_name=sensor_name + DBConfig.DAY_SUFFIX,
+                data=day_avg,
+                time=last_date
+            )
+
+    async def _save_month_avg(self):
+        cur_month = datetime.combine(date=date.today(), time=time()).replace(day=1)
+        last_month = (cur_month-timedelta(days=1)).replace(day=1)
+        for sensor_name, stat in self.stats.items():
+            month_avg = await self.db.get_stat_avg(
+                stat_name=sensor_name + DBConfig.DAY_SUFFIX,
+                start=last_month,
+                end=cur_month
+            )
+            await self.db.save_stat(
+                stat_name=sensor_name + DBConfig.MONTH_SUFFIX,
+                data=month_avg,
+                time=last_month
+            )
+
+    async def _save_year_avg(self):
+        cur_year = datetime.combine(date=date.today(), time=time()).replace(month=1, day=1)
+        last_year = (cur_year-timedelta(days=1)).replace(month=1, day=1)
+        for sensor_name, stat in self.stats.items():
+            year_avg = await self.db.get_stat_avg(
+                stat_name=sensor_name + DBConfig.MONTH_SUFFIX,
+                start=last_year,
+                end=cur_year
+            )
+            await self.db.save_stat(
+                stat_name=sensor_name + DBConfig.YEAR_SUFFIX,
+                data=year_avg,
+                time=last_year
             )
