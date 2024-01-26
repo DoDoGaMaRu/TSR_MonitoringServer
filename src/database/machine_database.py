@@ -64,18 +64,18 @@ class MachineDatabase(BaseAdaptiveDatabase):
         def query(conn):
             cur = conn.cursor()
             cur.execute(f'SELECT time, data '
-                        f'FROM {stat_name} WHERE DATE(time) >= ? and DATE(time) <= ? order by time',
+                        f'FROM {stat_name} WHERE ? <= DATE(time) and DATE(time) <= ? order by time',
                         (start, end))
             return cur.fetchall()
 
         return await self.execute(query)
 
-    async def get_stat_avg_of_date(self, stat_name: str, t_date: date):
+    async def get_stat_avg(self, stat_name: str, start: date, end: date):
         def query(conn):
             cur = conn.cursor()
             cur.execute(f'SELECT DATE(time), AVG(data) '
-                        f'FROM {stat_name} WHERE DATE(time) == ?',
-                        (t_date,))
+                        f'FROM {stat_name} WHERE ? <= DATE(time) AND DATE(time) < ?',
+                        (start, end))
             return cur.fetchone()[1]
 
         return await self.execute(query)
