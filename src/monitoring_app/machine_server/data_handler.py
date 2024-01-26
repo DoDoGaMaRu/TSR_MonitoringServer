@@ -108,8 +108,8 @@ class DataHandler:
         for s_name, s_stat in self.min_stats.items():
             data = {
                 'sensor_name': s_name,
-                'minute_avg': s_stat.get_average(),
-                'current_time': str(cur_time)
+                'data': s_stat.get_average(),
+                'time': str(cur_time)
             }
             self.w_conn.send(
                 pipe_serialize(
