@@ -35,11 +35,13 @@ class CustomNamespace(AsyncNamespace):
 
     async def on_connect(self, sid, environ):
         self.logger.info(f"{self.name} connected - ip: {environ['asgi.scope']['client'][0]}, sid: {sid}")
-        for state_saver in self._state_savers.values():
-            await self.emit(event='initialize', data=state_saver.get_datas(), to=sid)
 
     async def on_disconnect(self, sid):
         self.logger.info(f"{self.name} disconnected - sid: {sid}")
+
+    async def on_initialize(self, sid, data):
+        for state_saver in self._state_savers.values():
+            await self.emit(event='initialize', data=state_saver.get_datas(), to=sid)
 
     async def send_machine_event(self, machine_event: MachineEvent, data: any):
         if machine_event == MachineEvent.DataUpdate:
