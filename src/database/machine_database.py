@@ -70,11 +70,11 @@ class MachineDatabase(BaseAdaptiveDatabase):
 
         return await self.execute(query)
 
-    async def get_stat_avg(self, stat_name: str, start: date, end: date):
+    async def get_stat_avg(self, stat_name: str, start: datetime, end: datetime):
         def query(conn):
             cur = conn.cursor()
             cur.execute(f'SELECT DATE(time), AVG(data) '
-                        f'FROM {stat_name} WHERE ? <= DATE(time) AND DATE(time) < ?',
+                        f'FROM {stat_name} WHERE ? <= time AND time < ?',
                         (start, end))
             return cur.fetchone()[1]
 
@@ -96,7 +96,7 @@ class MachineDatabase(BaseAdaptiveDatabase):
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute(f'SELECT time, threshold, score '
-                        f'FROM {_ANOMALY_TABLE_NAME} WHERE DATE(time) >= ? and DATE(time) <= ? order by time',
+                        f'FROM {_ANOMALY_TABLE_NAME} WHERE ? <= DATE(time) and DATE(time) <= ? order by time',
                         (start, end))
             return cur.fetchall()
 

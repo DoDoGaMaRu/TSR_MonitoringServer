@@ -23,16 +23,13 @@ async def get_machine_list():
 
 
 @router.get("/hour")
-async def get_stat_per_hour(machine: str, date: datetime.date):
-    res = []
-
-    if os.path.isfile(os.path.join(DBConfig.PATH, f'{machine}.db')):
-        db = MachineDatabase(directory=DBConfig.PATH, name=machine)
-        table_names = [name for name in db.get_table_list() if DBConfig.HOUR_SUFFIX in name]
-        for name in table_names:
-            datas = await db.get_stat_by_one_day(name, date)
-            res += list(map(lambda e: {'name': name, 'time': e[0], 'data': e[1]}, datas))
-    return res
+async def get_stat_per_hour(machine: str, start: datetime.date, end: datetime.date):
+    return await get_stat(
+        machine=machine,
+        suffix=DBConfig.HOUR_SUFFIX,
+        start=start,
+        end=end
+    )
 
 
 @router.get("/day")
