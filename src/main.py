@@ -73,7 +73,6 @@ def show_alert(existing_pid):
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-
     if os.path.isfile(lock_file_path):
         existing_pid = get_locker_pid()
         if is_process_running(existing_pid):
